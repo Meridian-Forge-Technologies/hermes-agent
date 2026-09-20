@@ -3230,13 +3230,10 @@ class APIServerAdapter(OpenAICompatRoutesMixin, BasePlatformAdapter):
         if admitted is None:
             return None
         home, record = admitted
-        from tools.bot_live_delivery import read_delivery_result
+        from tools.bot_live_delivery import await_delivery_async
         from tools.bot_mode_dm import _LIVE_WAIT_SECONDS
         delivery_id = record["delivery_id"]
-        deadline = time.monotonic() + _LIVE_WAIT_SECONDS
-        while record["status"] in ("queued", "claimed") and time.monotonic() < deadline:
-            await asyncio.sleep(0.5)
-            record = await asyncio.to_thread(read_delivery_result, home, delivery_id) or record
+        record = await await_delivery_async(home, delivery_id, _LIVE_WAIT_SECONDS) or record
         headers = self._session_headers(session_id, ctx["gateway_session_key"])
         if record["status"] == "settled":
             return web.json_response(
